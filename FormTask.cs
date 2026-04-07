@@ -187,7 +187,8 @@ namespace it_company
                     }
                 }
 
-                // Расчет дней до дедлайна с DateOnly
+                // РАСЧЕТ ДНЕЙ ДО ДЕДЛАЙНА
+                // Если срок уже прошел - значение будет отрицательным
                 int daysUntilDeadline = (task.DueDate.DayNumber - today.DayNumber);
 
                 // Преобразование DateOnly в DateTime для отображения в DataGridView
@@ -203,16 +204,56 @@ namespace it_company
                     assigneeName,
                     createdDate,
                     dueDate,
-                    daysUntilDeadline
+                    daysUntilDeadline  // Отрицательное значение, если срок прошел
                 );
 
                 var row = dgvTasks.Rows[rowIndex];
                 row.Tag = task.TaskId;
+
+                // Настройка цвета ячейки "Дней до дедлайна" в зависимости от значения
+                ColorDaysLeftCell(row, daysUntilDeadline);
+
+                // Подсветка всей строки
                 ApplyRowColor(row, statusName, priorityName, daysUntilDeadline);
             }
 
             dgvTasks.ResumeLayout();
             dgvTasks.AutoResizeRows(DataGridViewAutoSizeRowsMode.AllCells);
+        }
+
+        private void ColorDaysLeftCell(DataGridViewRow row, int daysUntilDeadline)
+        {
+            var cell = row.Cells["colDaysLeft"];
+
+            if (daysUntilDeadline < 0)
+            {
+                // Просрочено - красный текст
+                cell.Style.ForeColor = Color.DarkRed;
+                cell.Style.Font = new Font("Times New Roman", 12, FontStyle.Bold);
+                cell.Value = $"{daysUntilDeadline} дн. (просрочено)";
+            }
+            else if (daysUntilDeadline == 0)
+            {
+                // Сегодня дедлайн - оранжевый текст
+                cell.Style.ForeColor = Color.DarkOrange;
+                cell.Style.Font = new Font("Times New Roman", 12, FontStyle.Bold);
+                cell.Value = $"{daysUntilDeadline} дн. (сегодня)";
+            }
+            else if (daysUntilDeadline <= 3)
+            {
+                // Осталось 3 дня или меньше - желтый/оранжевый
+                cell.Style.ForeColor = Color.DarkOrange;
+                cell.Style.Font = new Font("Times New Roman", 12, FontStyle.Bold);
+                cell.Value = $"{daysUntilDeadline} дн.";
+            }
+            else
+            {
+                // Нормальный срок - зеленый текст
+                cell.Style.ForeColor = Color.Green;
+                cell.Value = $"{daysUntilDeadline} дн.";
+            }
+
+            cell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
         }
 
         private void ApplyRowColor(DataGridViewRow row, string statusName, string priorityName, int daysUntilDeadline)
@@ -223,10 +264,16 @@ namespace it_company
                 row.DefaultCellStyle.BackColor = ColorTranslator.FromHtml("#FFF3CD");
             }
 
-            // Правило 2: Срок истек и статус не "Завершена" -> #F8D7DA
+            // Правило 2: Срок истек (отрицательное значение) и статус не "Завершена" -> #F8D7DA
             if (daysUntilDeadline < 0 && statusName != "Завершена")
             {
                 row.DefaultCellStyle.BackColor = ColorTranslator.FromHtml("#F8D7DA");
+            }
+
+            // Если задача завершена - серый фон
+            if (statusName == "Завершена")
+            {
+                row.DefaultCellStyle.BackColor = Color.LightGray;
             }
         }
 
